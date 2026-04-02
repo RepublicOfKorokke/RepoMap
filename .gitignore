@@ -1,0 +1,14 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.cecli*
+/infrastructure/datasources/manifest.json
+/infrastructure/datasources/tree_sitter_engines
+*.DS_Store
