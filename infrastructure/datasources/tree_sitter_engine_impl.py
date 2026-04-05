@@ -1,4 +1,5 @@
 # infrastructure/datasources/tree_sitter_engine_impl.py
+import logging
 import os
 from typing import List
 
@@ -33,11 +34,15 @@ class TreeSitterConstants:
 
 
 class TreeSitterEngineImpl(TreeSitterEngine):
+    def __init__(self):
+        self._logger = logging.getLogger(__name__)
+
     def parse_and_query(self, code: str, language_name: str) -> List[RawCaptureDto]:
         if not code or not language_name:
             return []
 
         try:
+            self._logger.debug(f"Parsing code with language: {language_name}")
             get_language(language_name)
             config = ProcessConfig(
                 language=language_name,
@@ -70,7 +75,7 @@ class TreeSitterEngineImpl(TreeSitterEngine):
             return raw_captures
 
         except Exception as e:
-            print(f"Exception occured in TreeSitterEngineImpl: {e}")
+            self._logger.error(f"Exception occurred in TreeSitterEngineImpl: {e}")
             return []
 
     def _process_node(self, node: dict, raw_captures: list[RawCaptureDto]):

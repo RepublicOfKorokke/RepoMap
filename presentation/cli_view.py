@@ -1,5 +1,6 @@
 # presentation/cli_view.py
 
+import logging
 import os
 from collections import defaultdict
 
@@ -21,6 +22,7 @@ class CLIView:
         self._use_case = use_case
         self._file_system = file_system
         self._exclude_filter = exclude_filter
+        self._logger = logging.getLogger(__name__)
         self._use_case.subscribe(self._on_state_changed)
 
     def _on_state_changed(self, state: ParsingState) -> None:
@@ -28,18 +30,20 @@ class CLIView:
             pass
 
         elif isinstance(state, Processing):
-            print("\n[INFO] Scanning directory and analyzing syntax trees...\n")
+            self._logger.info(
+                "\n[INFO] Scanning directory and analyzing syntax trees...\n"
+            )
 
         elif isinstance(state, Success):
             self._render_simple_format(state.tags)
 
         elif isinstance(state, Error):
-            print("\n[ERROR] A failure occurred during processing:")
-            print(f">>> {state.message}\n")
+            self._logger.error("\n[ERROR] A failure occurred during processing:")
+            self._logger.error(f">>> {state.message}\n")
 
     def _render_simple_format(self, tags: list[CodeTag]) -> None:
         if not tags:
-            print("No tags found.")
+            self._logger.error("No tags found.")
             return
 
         file_map: dict = defaultdict(lambda: {"defs": [], "refs": set()})
@@ -66,7 +70,7 @@ class CLIView:
                         f"  - [L{tag.start_line}-{tag.end_line}] {tag.identifier_name} {tag.identifier_type} "
                     )
 
-            print()
+            print("")
 
     def start_parsing(self, directory_path: str) -> None:
         self._use_case.execute(directory_path, self._exclude_filter)
