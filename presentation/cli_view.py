@@ -45,18 +45,18 @@ class CLIView:
                 file_map[rel_path]["refs"].add(tag.identifier_name)
 
         for file_path, data in file_map.items():
-            print(f"📦 {file_path}")
+            print(f"## {file_path}")
 
             if len(data["refs"]) > 0:
-                print("   Dependencies:")
+                print("- Dependencies:")
                 for ref in data["refs"]:
-                    print(f"      {ref}")
+                    print(f"  - {ref}")
 
             if len(data["defs"]) > 0:
-                print("   Definitions:")
+                print("- Definitions:")
                 for tag in sorted(data["defs"], key=lambda x: x.start_line):
                     print(
-                        f"      [L{tag.start_line}-{tag.end_line}] {tag.identifier_type} {tag.identifier_name}"
+                        f"  - [L{tag.start_line}-{tag.end_line}] {tag.identifier_name} {tag.identifier_type} "
                     )
 
             print()
