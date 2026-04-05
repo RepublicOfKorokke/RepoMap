@@ -4,6 +4,7 @@ import os
 from collections import defaultdict
 
 from domain.entities.code_tag import CodeTag
+from domain.entities.exclude_filter import ExcludeFilter
 from domain.entities.tag_kind import TagKind
 from domain.states.parsing_state import Error, Idle, ParsingState, Processing, Success
 from domain.usecases.parse_directory_usecase import ParseDirectoryUseCase
@@ -11,9 +12,15 @@ from infrastructure.interfaces.file_system_source import FileSystemSource
 
 
 class CLIView:
-    def __init__(self, use_case: ParseDirectoryUseCase, file_system: FileSystemSource):
+    def __init__(
+        self,
+        use_case: ParseDirectoryUseCase,
+        file_system: FileSystemSource,
+        exclude_filter: ExcludeFilter,
+    ):
         self._use_case = use_case
         self._file_system = file_system
+        self._exclude_filter = exclude_filter
         self._use_case.subscribe(self._on_state_changed)
 
     def _on_state_changed(self, state: ParsingState) -> None:
@@ -62,5 +69,4 @@ class CLIView:
             print()
 
     def start_parsing(self, directory_path: str) -> None:
-
-        self._use_case.execute(directory_path)
+        self._use_case.execute(directory_path, self._exclude_filter)
