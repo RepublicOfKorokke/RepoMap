@@ -7,10 +7,14 @@ from domain.usecases.parse_directory_usecase import ParseDirectoryUseCase
 from infrastructure.analyzers.tree_sitter_syntax_analyzer_impl import (
     TreeSitterSyntaxAnalyzerImpl,
 )
-from infrastructure.datasources.local_file_system_source import LocalFileSystemSource
-from infrastructure.datasources.tree_sitter_engine_impl import (
-    TreeSitterEngineImpl,
+from infrastructure.datasources.composite_tree_sitter_engine import (
+    CompositeTreeSitterEngine,
 )
+from infrastructure.datasources.local_file_system_source import LocalFileSystemSource
+from infrastructure.datasources.raw_tree_sitter_kotlin_engine_impl import (
+    RawTreeSitterKotlinEngineImpl,
+)
+from infrastructure.datasources.tree_sitter_engine_impl import TreeSitterEngineImpl
 from infrastructure.filters.file_name_filter import FileNameExcludeFilter
 from infrastructure.repositories.local_source_code_repository import (
     LocalSourceCodeRepository,
@@ -32,28 +36,48 @@ def main():
         "--exclude",
         "-e",
         nargs="*",
+        default=[],
         help="File patterns to exclude (e.g., *.py, *.log, __pycache__)",
+    )
+    parser.add_argument(
+        "--include",
+        "-i",
+        nargs="*",
+        default=[],
+        help="File patterns to include only (exclude others)",
     )
     args = parser.parse_args()
 
     target_directory = args.directory_path
-    exclude_patterns = args.exclude if args.exclude else []
+
+    rules = []
+
+    if args.exclude:
+        rules.append(FileNameExcludeFilter(args.exclude, is_whitelist=False))
+
+    if args.include:
+        rules.append(FileNameExcludeFilter(args.include, is_whitelist=True))
 
     logger.info(f"Starting parsing process for directory: {target_directory}")
-    logger.info(f"Exclude patterns: {exclude_patterns}")
+    logger.info(f"Exclude patterns: {rules}")
 
     # --- 1. Instantiate Data Sources & Filters ---
     logger.info("Instantiating data sources and filters...")
     file_system = LocalFileSystemSource()
-    tree_sitter_engine = TreeSitterEngineImpl()
 
-    file_name_rule = FileNameExcludeFilter(exclude_patterns)
-    exclude_filter = ExcludeFilter(rules=[file_name_rule])
+    exclude_filter = ExcludeFilter(rules=rules)
 
     # --- 2. Inject Data Sources into Interfaces ---
     logger.info("Injecting data sources into repositories and analyzers...")
     repository = LocalSourceCodeRepository(file_system_source=file_system)
-    analyzer = TreeSitterSyntaxAnalyzerImpl(tree_sitter_engine=tree_sitter_engine)
+
+    default_engine = TreeSitterEngineImpl()
+    kotlin_engine = RawTreeSitterKotlinEngineImpl()
+
+    engine = CompositeTreeSitterEngine(
+        default_engine=default_engine, language_engines={"kotlin": kotlin_engine}
+    )
+    analyzer = TreeSitterSyntaxAnalyzerImpl(tree_sitter_engine=engine)
 
     # --- 3. Inject Interfaces into Domain UseCase ---
     logger.info("Injecting interfaces into UseCase...")

@@ -79,9 +79,14 @@ class TreeSitterEngineImpl(TreeSitterEngine):
             return []
 
     def _process_node(self, node: dict, raw_captures: list[RawCaptureDto]):
+        node_name = node.get("name", "")
+        if not node_name:
+            self._logger.debug('node["name"] not found')
+            return
+
         raw_captures.append(
             RawCaptureDto(
-                node_text=node["name"],
+                node_text=node_name,
                 node_kind=node["kind"],
                 capture_type=self.CAPTURE_TYPE_DEFINITION,
                 start_line=node[TreeSitterConstants.SPAN][
